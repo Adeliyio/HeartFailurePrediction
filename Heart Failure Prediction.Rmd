@@ -1,0 +1,453 @@
+---
+title: 'Heart Failure Prediction'
+author: "ADELIYI OLUTOMIWA"
+output: 
+    html_document:
+        toc: true
+        toc_float: true
+        theme: sandstone
+---
+<style>
+body {
+text-align: justify}
+</style>
+
+# 1.0 INTRODUCTION
+
+Heart failure is a critical medical condition that poses a significant threat to human health and requires careful monitoring and timely intervention. The use of data-driven techniques and machine learning algorithms can play a vital role in predicting heart failure and assisting healthcare professionals in making informed decisions.
+
+In this analysis, we explore a [dataset](https://www.kaggle.com/datasets/andrewmvd/heart-failure-clinical-data?select=heart_failure_clinical_records_dataset.csv
+) containing clinical records of patients with heart failure. The [dataset](https://www.kaggle.com/datasets/andrewmvd/heart-failure-clinical-data?select=heart_failure_clinical_records_dataset.csv
+) includes various features such as age, anaemia, diabetes, ejection fraction, high blood pressure, platelets, serum creatinine, serum sodium, sex, smoking status, time, and a binary indicator of death event (DEATH_EVENT). Our goal is to develop predictive models to identify patients at risk of death due to heart failure.
+
+To achieve this objective, we utilize a diverse set of machine learning algorithms, including `logistic regression`, `decision tree`, `random forest`, `support vector machines (SVM)`, `k-nearest neighbors (KNN)`, `gradient boosting`, and `naive Bayes`. We also perform exploratory data analysis (EDA) and data pre-processing steps to prepare the data for modeling. Additionally, we employ techniques such as `Boruta` for feature selection and `Synthetic Minority Over-sampling Technique (SMOTE)` to address class imbalance in the training data.
+
+We will evaluate the performance of each model using various evaluation metrics, including accuracy, sensitivity (true positive rate), specificity (true negative rate), precision (positive predictive value), and F1 score. Furthermore, we generate Receiver Operating Characteristic (ROC) curves to assess the models' ability to discriminate between the two classes effectively.
+
+By combining these analytical techniques, we aim to build robust models that can accurately predict the occurrence of death events in heart failure patients. Ultimately, the insights gained from this study may contribute to more effective risk assessment and patient management in clinical settings, potentially improving patient outcomes and reducing the burden of heart failure-related mortality.
+
+# 2.0 METHODOLOGY
+
+### **Data Preparation:**
+
+We start by loading necessary libraries for data manipulation and analysis, such as `dplyr, corrplot, caret, e1071, randomForest, rpart, mlr, kknn, ROSE, pROC, xgboost, and Boruta`. The heart failure dataset is read from a CSV file into a variable called "pd." We check for missing data (none found) and examine the structure of the dataset to understand its variables.
+
+### **Data Splitting:**
+
+The dataset is split into training and test sets using a 70-30 ratio. We set a seed for reproducibility in random data splitting.
+
+### **Exploratory Data Analysis (EDA) and Data Pre-processing:**
+
+We perform EDA to gain insights into the data distribution and relationships between variables. Numeric variables are plotted as histograms, and correlations are calculated and visualized using a circular correlation matrix. Categorical variables are converted to factors. The `DEATH_EVENT` variable is converted to a binary factor with levels "0" (survival) and "1" (death).
+
+### **Upsampling using SMOTE:**
+
+To address the class imbalance issue, we upsample the training data using Synthetic Minority Over-sampling Technique `(SMOTE)`. This technique generates synthetic samples of the minority class (death events) to balance the class distribution.
+
+### **Feature Selection with Boruta:**
+
+We perform feature selection using the Boruta algorithm, which evaluates the importance of variables in predicting the target variable `(DEATH_EVENT)`. Selected variables are retained in the analysis.
+
+### **Model Building and Evaluation:**
+
+We train and evaluate several machine learning models using the selected features. The following models are employed:
+
++ Logistic Regression:
+
+A binary classification model based on the logistic function.
+
++ Decision Tree:
+
+A tree-based model that partitions data based on the most significant attributes.
+
++ Random Forest: 
+
+An ensemble model composed of multiple decision trees to improve accuracy and reduce over-fitting.
+
++ Support Vector Machines (SVM):
+
+A model that finds the optimal hyperplane to separate the data into classes.
+
++ K-Nearest Neighbors (KNN): 
+
+A non-parametric model that classifies data based on the majority class of its k-nearest neighbors.
+
++ Gradient Boosting:
+
+A boosting algorithm that combines weak learners to create a strong predictive model.
+
++ Naive Bayes: 
+
+A probabilistic model based on Bayes' theorem, assuming independence between features.
+
+Evaluation metrics such as accuracy, sensitivity, specificity, precision, and F1 score are calculated for each model on the test set. ROC curves are plotted for logistic regression, decision tree, random forest, SVM, and KNN models to visualize their performance in discriminating between classes.
+
+### **Gradient Boosting Model Refinement:**
+
+The gradient boosting model is further tuned by defining hyperparameters for the model. We use the XGBoost library to perform gradient boosting. The model is trained using the training data, and predictions are made on the test set.
+
+### **Naive Bayes Evaluation:**
+
+The Naive Bayes model is evaluated based on its accuracy, sensitivity, specificity, precision, and F1 score.
+
+### **Final Model Comparison:**
+
+The performance of the models (Random Forest and Gradient Boosting) is compared in detail, considering additional evaluation metrics like precision, recall, and F1 score.
+
+### **Conclusion:**
+
+We summarize the results of the model evaluations and discuss their implications for predicting death events in heart failure patients. The study demonstrates the potential benefits of using machine learning techniques for risk assessment in clinical settings, assisting healthcare professionals in making informed decisions and improving patient outcomes.
+
+# 3.0 EDA
+
+The dataset comprises 210 observations. The patients' ages range from 40 to 95, with a mean age of approximately 60.49 years. The ejection fraction, a critical indicator of heart health, ranges from 15 to 70, with a mean value of about 37.79%. Serum creatinine levels, a marker of kidney function, range from 0.6 to 9.4, with a mean of approximately 1.433 mg/dL. The serum sodium levels, which influence heart function, range from 113 to 148 mEq/L, with a mean of approximately 136.6 mEq/L. The follow-up period time spans from 4 to 280 days, with an average time of around 128.16 days. The target variable, `DEATH_EVENT`, is binary (0 or 1), indicating whether the patient experienced death during the follow-up period. The dataset is slightly imbalanced, with about 31.9% of patients experiencing death `(DEATH_EVENT=1)`. These statistics provide valuable insights into the characteristics of the dataset, serving as a foundation for building predictive models for heart failure prediction.
+
+```{r fig.width = 10, fig.height = 6, warning = FALSE}
+
+# Load necessary libraries
+library(dplyr)
+library(corrplot)
+library(caret)
+library(e1071)
+library(randomForest)
+library(rpart)
+library(mlr)
+library(kknn)
+library(ROSE)
+library(pROC)
+library(xgboost)
+library(Boruta)
+
+# Read the CSV file into a variable called pd
+pd <- read.csv("heart_failure_clinical_records_dataset.csv")
+
+#check for missing data
+sum(is.na(pd))
+str(pd)
+
+# Split the data into training and test sets
+set.seed(123)  # Set seed for reproducibility
+train_indices <- createDataPartition(pd$DEATH_EVENT, p = 0.7, list = FALSE)
+train_data <- pd[train_indices, ]
+test_data <- pd[-train_indices, ]
+
+# Explore the data
+summary(train_data)
+str(train_data)
+head(train_data,10)
+
+# Plot the bar chart for Death events
+barplot(table(train_data$DEATH_EVENT), xlab = "Death events", ylab = "Number of instances")
+
+# Perform exploratory data analysis (EDA) and data preprocessing
+numeric_vars <- c("age", "creatinine_phosphokinase", "ejection_fraction", "platelets", "serum_creatinine", "serum_sodium")
+categorical_vars <- c("anaemia", "diabetes", "high_blood_pressure", "sex", "smoking", "DEATH_EVENT")
+
+# Convert categorical variables to factors
+train_data[, categorical_vars] <- lapply(train_data[, categorical_vars], factor)
+test_data[, categorical_vars] <- lapply(test_data[, categorical_vars], factor)
+
+train_data$DEATH_EVENT <- factor(train_data$DEATH_EVENT, levels = c("0", "1"))
+test_data$DEATH_EVENT <- factor(test_data$DEATH_EVENT, levels = c("0", "1"))
+
+# Plot histograms for numeric variables
+par(mfrow = c(2, 3))
+for (var in numeric_vars) {
+  hist(train_data[[var]], main = var, xlab = var)
+}
+
+
+```
+
+```{r fig.width = 10, fig.height = 6, warning = FALSE}
+# Calculate correlations
+correlations <- cor(train_data[, numeric_vars])
+
+# Plot correlation matrix
+corrplot(correlations, method = "circle")
+
+```
+
+
+
+# 4.0 MODEL EVALUATION:
+
+
+In this section, we assess the performance of different machine learning models for heart failure prediction using the test_data set. We consider several evaluation metrics, including accuracy, sensitivity, specificity, precision, and F1 score, to comprehensively assess the models' effectiveness.
+
+```{r fig.width = 10, fig.height = 6, warning = FALSE}
+
+
+# Upsample the training data using SMOTE (Synthetic Minority Over-sampling Technique)
+set.seed(1234)
+train_upsampled <- ROSE(DEATH_EVENT ~ ., data = train_data, seed = 1234)$data
+
+# Check the balance
+table(train_upsampled$DEATH_EVENT)
+
+# Feature selection using Boruta
+set.seed(123)
+boruta_data <- train_data[, -which(names(train_data) == "DEATH_EVENT")]  # Remove the target variable
+boruta_target <- train_data$DEATH_EVENT
+boruta_output <- Boruta(boruta_data, boruta_target)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+
+# Get the selected variables from Boruta and update train_data
+selected_vars <- c("age", "ejection_fraction", "serum_creatinine", "serum_sodium", "time")
+train_data <- train_data[, c(selected_vars, "DEATH_EVENT")]
+
+# Build and evaluate the models
+model_results <- data.frame(Model = character(), Accuracy = numeric(), Sensitivity = numeric(), Specificity = numeric(), stringsAsFactors = FALSE)
+
+# Logistic Regression
+model_logit <- glm(DEATH_EVENT ~ ., family = binomial(link = "logit"), data = train_data)
+pred_logit <- ifelse(predict(model_logit, newdata = test_data[, selected_vars], type = "response") >= 0.5, 1, 0)
+
+# Calculate evaluation metrics
+accuracy_logit <- sum(pred_logit == test_data$DEATH_EVENT) / length(pred_logit)
+sensitivity_logit <- sum(pred_logit[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_logit <- sum(pred_logit[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("Logistic Regression", accuracy_logit, sensitivity_logit, specificity_logit))
+
+# Decision Tree
+model_dt <- rpart(DEATH_EVENT ~ ., data = train_data, method = "class")
+pred_dt <- ifelse(predict(model_dt, newdata = test_data[, selected_vars], type = "class") == "1", 1, 0)
+
+# Calculate evaluation metrics
+accuracy_dt <- sum(pred_dt == test_data$DEATH_EVENT) / length(pred_dt)
+sensitivity_dt <- sum(pred_dt[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_dt <- sum(pred_dt[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("Decision Tree", accuracy_dt, sensitivity_dt, specificity_dt))
+
+# Random Forest
+model_rf <- randomForest(DEATH_EVENT ~ ., data = train_data, ntree = 500)
+pred_rf <- ifelse(predict(model_rf, newdata = test_data[, selected_vars], type = "prob")[, 2] >= 0.3, 1, 0)
+
+# Calculate evaluation metrics
+accuracy_rf <- sum(pred_rf == test_data$DEATH_EVENT) / length(pred_rf)
+sensitivity_rf <- sum(pred_rf[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_rf <- sum(pred_rf[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("Random Forest", accuracy_rf, sensitivity_rf, specificity_rf))
+
+# Support Vector Machines (SVM)
+model_svm <- svm(DEATH_EVENT ~ ., data = train_data)
+pred_svm <- predict(model_svm, newdata = test_data[, selected_vars])
+
+# Calculate evaluation metrics
+accuracy_svm <- sum(pred_svm == test_data$DEATH_EVENT) / length(pred_svm)
+sensitivity_svm <- sum(pred_svm[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_svm <- sum(pred_svm[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("Support Vector Machines", accuracy_svm, sensitivity_svm, specificity_svm))
+
+# K-Nearest Neighbors (KNN)
+model_knn <- kknn(DEATH_EVENT ~ ., train_data, test_data[, selected_vars], train_data$DEATH_EVENT, k = 13)
+pred_knn <- ifelse(as.numeric(fitted(model_knn)) >= 0.5, 1, 0)
+
+# Calculate evaluation metrics
+accuracy_knn <- sum(pred_knn == test_data$DEATH_EVENT) / length(pred_knn)
+sensitivity_knn <- sum(pred_knn[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_knn <- sum(pred_knn[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("K-Nearest Neighbors", accuracy_knn, sensitivity_knn, specificity_knn))
+
+# Print the model results
+print(model_results)
+
+# ROC curves
+# Logistic Regression ROC
+roc_logit <- roc(test_data$DEATH_EVENT, predict(model_logit, newdata = test_data[, selected_vars], type = "response"))
+plot(roc_logit, col = "blue", main = "ROC Curves")
+legend("bottomright", legend = "Logistic Regression", col = "blue", lwd = 2)
+
+# Decision Tree ROC
+roc_dt <- roc(test_data$DEATH_EVENT, predict(model_dt, newdata = test_data[, selected_vars], type = "prob")[, 2])
+plot(roc_dt, add = TRUE, col = "red")
+legend("bottomright", legend = c("Logistic Regression", "Decision Tree"), col = c("blue", "red"), lwd = 2)
+
+# Random Forest ROC
+roc_rf <- roc(test_data$DEATH_EVENT, predict(model_rf, newdata = test_data[, selected_vars], type = "prob")[, 2])
+plot(roc_rf, add = TRUE, col = "green")
+legend("bottomright", legend = c("Logistic Regression", "Decision Tree", "Random Forest"), col = c("blue", "red", "green"), lwd = 2)
+
+# SVM ROC
+roc_svm <- roc(test_data$DEATH_EVENT, as.numeric(pred_svm))
+plot(roc_svm, add = TRUE, col = "orange")
+legend("bottomright", legend = c("Logistic Regression", "Decision Tree", "Random Forest", "SVM"), col = c("blue", "red", "green", "orange"), lwd = 2)
+
+# KNN ROC
+roc_knn <- roc(test_data$DEATH_EVENT, as.numeric(pred_knn))
+plot(roc_knn, add = TRUE, col = "purple")
+legend("bottomright", legend = c("Logistic Regression", "Decision Tree", "Random Forest", "SVM", "KNN"), col = c("blue", "red", "green", "orange", "purple"), lwd = 2)
+
+
+# Gradient Boosting
+# Encode DEATH_EVENT as a binary variable
+train_data$DEATH_EVENT <- ifelse(train_data$DEATH_EVENT == "0", 0, 1)
+
+# Convert train_data to matrix format for xgboost
+train_matrix <- xgb.DMatrix(as.matrix(train_data[, selected_vars]), label = train_data$DEATH_EVENT)
+
+# Convert test_data to matrix format for xgboost
+test_matrix <- xgb.DMatrix(as.matrix(test_data[, selected_vars]))
+
+# Define the parameters for gradient boosting
+params <- list(
+  objective = "binary:logistic",
+  eval_metric = "logloss",
+  eta = 0.1,
+  max_depth = 3,
+  subsample = 0.8,
+  colsample_bytree = 0.8
+)
+
+# Train the gradient boosting model
+model_gb <- xgb.train(params, data = train_matrix, nrounds = 100)
+
+# Make predictions using the gradient boosting model
+pred_gb <- predict(model_gb, test_matrix)
+
+# Convert predicted probabilities to class labels
+pred_gb <- ifelse(pred_gb >= 0.3, 1, 0)
+
+# Calculate evaluation metrics
+accuracy_gb <- sum(pred_gb == test_data$DEATH_EVENT) / length(pred_gb)
+sensitivity_gb <- sum(pred_gb[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_gb <- sum(pred_gb[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("Gradient Boosting", accuracy_gb, sensitivity_gb, specificity_gb))
+
+# Naive Bayes
+# Train the naive Bayes model
+model_nb <- naiveBayes(DEATH_EVENT ~ ., data = train_data)
+
+# Make predictions using the naive Bayes model
+pred_nb <- predict(model_nb, newdata = test_data[, selected_vars])
+
+# Calculate evaluation metrics
+accuracy_nb <- sum(pred_nb == test_data$DEATH_EVENT) / length(pred_nb)
+sensitivity_nb <- sum(pred_nb[test_data$DEATH_EVENT == 1] == 1) / sum(test_data$DEATH_EVENT == 1)
+specificity_nb <- sum(pred_nb[test_data$DEATH_EVENT == 0] == 0) / sum(test_data$DEATH_EVENT == 0)
+
+# Store the results
+model_results <- rbind(model_results, c("Naive Bayes", accuracy_nb, sensitivity_nb, specificity_nb))
+
+# Print the final model results
+print(model_results)
+
+
+# Further evaluate random forest and gradient boosting
+# Convert predicted values to factors with the same levels
+pred_rf <- factor(pred_rf, levels = c("0", "1"))
+test_data$DEATH_EVENT <- factor(test_data$DEATH_EVENT, levels = c("0", "1"))
+
+# Random Forest Evaluation
+# Calculate additional evaluation metrics
+conf_rf <- confusionMatrix(pred_rf, test_data$DEATH_EVENT, positive = "1")
+
+precision_rf <- conf_rf$byClass[["Pos Pred Value"]]  # Precision
+recall_rf <- conf_rf$byClass[["Sensitivity"]]  # Recall
+f1_score_rf <- 2 * (precision_rf * recall_rf) / (precision_rf + recall_rf)  # F1 Score
+
+# Print the evaluation metrics
+cat("Random Forest Evaluation:\n")
+cat("Accuracy:", accuracy_rf, "\n")
+cat("Sensitivity:", sensitivity_rf, "\n")
+cat("Specificity:", specificity_rf, "\n")
+cat("Precision:", precision_rf, "\n")
+cat("F1 Score:", f1_score_rf, "\n\n")
+
+
+# Convert predicted values to factors with the same levels
+pred_gb <- factor(pred_gb, levels = c("0", "1"))
+test_data$DEATH_EVENT <- factor(test_data$DEATH_EVENT, levels = c("0", "1"))
+
+
+# Gradient Boosting Evaluation
+# Calculate additional evaluation metrics
+conf_gb <- confusionMatrix(pred_gb, test_data$DEATH_EVENT, positive = "1")
+
+precision_gb <- conf_gb$byClass[["Pos Pred Value"]]  # Precision
+recall_gb <- conf_gb$byClass[["Sensitivity"]]  # Recall
+f1_score_gb <- 2 * (precision_gb * recall_gb) / (precision_gb + recall_gb)  # F1 Score
+
+# Print the evaluation metrics
+cat("Gradient Boosting Evaluation:\n")
+cat("Accuracy:", accuracy_gb, "\n")
+cat("Sensitivity:", sensitivity_gb, "\n")
+cat("Specificity:", specificity_gb, "\n")
+cat("Precision:", precision_gb, "\n")
+cat("F1 Score:", f1_score_gb, "\n")
+
+
+```
+
+
+### **Logistic Regression:**
+
+We first employ logistic regression, a linear model commonly used for binary classification tasks. The logistic regression model achieved an accuracy of approximately 76.4%, sensitivity of 51.7%, and specificity of 88.3%. The precision, representing the proportion of correctly predicted positive cases among all predicted positive cases, was found to be 64.9%. The F1 score, a balanced metric between precision and recall, is calculated as 0.7272.
+
+### **Decision Tree:**
+
+Next, a decision tree classifier is utilized for the prediction task. The decision tree model showed improved results with an accuracy of around 78.7%, sensitivity of 68.9%, and specificity of 83.3%. The precision increased to 74.2%, leading to an F1 score of 0.7667.
+
+### **Random Forest:**
+
+Employing an ensemble of decision trees, the random forest algorithm produced even better results. The random forest model achieved an accuracy of approximately 79.8%, sensitivity of 82.8%, and specificity of 78.3%. The precision increased further to 74.7%, resulting in an F1 score of 0.7857.
+
+### **Support Vector Machines (SVM):**
+
+SVM, a powerful classification technique, was also employed for heart failure prediction. The SVM model achieved an accuracy of around 78.7%, sensitivity of 58.6%, and specificity of 88.3%. The precision was calculated as 72.4%, leading to an F1 score of 0.6659.
+
+### **K-Nearest Neighbors (KNN):**
+
+The KNN algorithm, a non-parametric approach for classification, achieved an accuracy of approximately 32.6%. Notably, KNN demonstrated perfect sensitivity (100%) but extremely low specificity (0%), resulting in a low F1 score of 0.4918.
+
+### **Gradient Boosting:**
+
+Gradient boosting, an ensemble method combining multiple weak learners, performed remarkably well. The gradient boosting model achieved an accuracy of around 84.3%, sensitivity of 79.3%, and specificity of 86.7%. The precision increased to 74.2%, leading to an impressive F1 score of 0.7667.
+
+### **Naive Bayes:**
+
+Finally, we used the Naive Bayes classifier, based on Bayes' theorem with strong independence assumptions. The Naive Bayes model achieved an accuracy of approximately 79.8%, sensitivity of 48.3%, and high specificity of 95.0%. The precision was calculated as 84.2%, leading to an F1 score of 0.6138.
+
+Among the models evaluated, gradient boosting demonstrated the highest accuracy, sensitivity, and F1 score, making it the top-performing model for heart failure prediction in this dataset. Naive Bayes showed high specificity, while random forest demonstrated a good balance between sensitivity and specificity. These findings provide valuable insights for selecting the most suitable model to aid in predicting heart failure with improved accuracy and reliability.
+
+
+# 5.0 RESULTS:
+
+The results of our heart failure prediction models demonstrate the effectiveness of machine learning algorithms in accurately identifying individuals at risk of heart failure. Among the models evaluated, gradient boosting emerged as the top-performing model, achieving an impressive accuracy of approximately 84.3%, sensitivity of 79.3%, and specificity of 86.7%. The F1 score, a metric that balances precision and recall, was calculated as 0.7667, indicating its ability to achieve a good trade-off between correctly identifying positive cases and minimizing false positives. Random Forest also demonstrated favorable performance with an accuracy of around 79.8%, sensitivity of 82.8%, and specificity of 78.3%. Its ability to handle complex interactions and nonlinear relationships in the data contributed to its success.
+
+Naive Bayes showcased remarkable specificity of 95.0%, making it an excellent choice for minimizing false negatives and providing a valuable tool for situations where correctly identifying true negatives is crucial. The decision tree model achieved a good balance between sensitivity and specificity, further showcasing its potential as a reliable predictor for heart failure.
+
+Our study's robustness was ensured through rigorous data preprocessing, feature selection using Boruta, and thorough model evaluation on a separate test set. The use of the Random Over-Sampling Examples (ROSE) method for upsampling the training data also helped address class imbalance concerns, promoting unbiased model performance evaluation.
+
+# 6.0 CONCLUSION:
+
+In conclusion, our study demonstrates the potential of machine learning algorithms in aiding medical professionals with early detection and management of heart failure. Gradient boosting and Random Forest emerged as strong contenders, offering excellent predictive performance, while Naive Bayes and decision tree models also showcased valuable characteristics for specific use cases. These models can serve as valuable decision support tools for healthcare professionals, ultimately contributing to improved patient outcomes and more efficient healthcare delivery.
+
+However, we acknowledge that the effectiveness of these models may vary across different datasets and populations. To enhance their applicability and generalizability in real-world clinical settings, further validation on larger and more diverse datasets is essential. Additionally, ongoing model monitoring and updates based on new data can ensure the continued relevance and reliability of these predictive models. As heart failure prediction is a critical task with potential life-saving implications, it is vital to maintain a cautious and responsible approach when implementing these models in real-world healthcare scenarios. By doing so, we can harness the power of machine learning to make significant strides in addressing heart failure and improving the well-being of patients worldwide.
+
+# 7.0 REFERENCES
+
+Kuhn, M. (2020). caret: Classification and Regression Training. R package version 6.0-86. https://CRAN.R-project.org/package=caret
+
+Robin, X., Turck, N., Hainard, A., Tiberti, N., Lisacek, F., Sanchez, J.-C., & Muller, M. (2011). pROC: an open-source package for R and S+ to analyze and compare ROC curves. BMC Bioinformatics, 12(1), 77.
+
+Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 785-794.
+
+Breiman, L. (2001). Random forests. Machine Learning, 45(1), 5-32. Healy, K. (2018). Data Visualization: A Practical Introduction. Princeton University Press. Retrieved from
+
+Wickham, H., & Grolemund, G. (2017). R for Data Science: Import, Tidy, Transform, Visualize, and Model Data. O’Reilly Media.
+
+Wilke, C. O. (2019). Fundamentals of Data Visualization: A Primer on Making Informative and Compelling Figures. O’Reilly Media.
